@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ficha de Produto, Milla Store</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 1.5rem 1rem; }
+  .card { background: #fff; border-radius: 16px; padding: 1.5rem; max-width: 480px; width: 100%; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+  .logo { font-size: 13px; color: #999; margin-bottom: 1.5rem; }
+  .progress-bar { height: 4px; background: #eee; border-radius: 99px; margin-bottom: 1.5rem; }
+  .progress-fill { height: 4px; background: #111; border-radius: 99px; transition: width 0.3s; }
+  .step { display: none; }
+  .step.active { display: block; }
+  .step-label { font-size: 11px; color: #aaa; margin-bottom: 4px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .step-question { font-size: 18px; font-weight: 600; color: #111; margin-bottom: 0.5rem; line-height: 1.4; }
+  .step-hint { font-size: 13px; color: #888; margin-bottom: 1rem; }
+  .multi-hint { font-size: 12px; color: #bbb; margin-bottom: 8px; }
+  .option-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 1.25rem; }
+  .option-btn { padding: 11px 12px; border: 1.5px solid #e5e5e5; border-radius: 10px; background: #fff; font-size: 14px; color: #333; cursor: pointer; text-align: center; transition: all 0.15s; -webkit-tap-highlight-color: transparent; }
+  .option-btn:active { transform: scale(0.97); }
+  .option-btn.selected { border-color: #111; background: #f7f7f7; font-weight: 600; color: #111; }
+  textarea { width: 100%; padding: 12px; font-size: 14px; border: 1.5px solid #e5e5e5; border-radius: 10px; background: #fff; color: #111; resize: vertical; min-height: 90px; font-family: inherit; outline: none; }
+  textarea:focus { border-color: #111; }
+  input[type=text], input[type=number] { width: 100%; padding: 12px; font-size: 15px; border: 1.5px solid #e5e5e5; border-radius: 10px; background: #fff; color: #111; font-family: inherit; outline: none; }
+  input:focus { border-color: #111; }
+  .row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 8px; }
+  .field-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .btn-primary { width: 100%; padding: 14px; background: #111; color: #fff; border: none; border-radius: 10px; font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 12px; -webkit-tap-highlight-color: transparent; }
+  .btn-primary:active { background: #333; }
+  .btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+  .btn-back { width: 100%; padding: 11px; background: transparent; color: #888; border: 1.5px solid #e5e5e5; border-radius: 10px; font-size: 14px; cursor: pointer; margin-top: 8px; -webkit-tap-highlight-color: transparent; }
+  .summary-card { background: #f7f7f7; border-radius: 12px; padding: 1rem 1.1rem; margin-bottom: 1rem; }
+  .summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 5px 0; border-bottom: 1px solid #eee; }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-key { color: #888; }
+  .summary-val { color: #111; font-weight: 500; max-width: 58%; text-align: right; }
+  .produto-counter { font-size: 13px; color: #aaa; text-align: center; margin-bottom: 1rem; }
+  .new-product-btn { width: 100%; padding: 13px; background: transparent; color: #111; border: 1.5px solid #e5e5e5; border-radius: 10px; font-size: 15px; cursor: pointer; margin-top: 8px; -webkit-tap-highlight-color: transparent; }
+  .success-screen { text-align: center; padding: 2rem 0; }
+  .success-icon { font-size: 48px; margin-bottom: 1rem; }
+  .success-title { font-size: 20px; font-weight: 600; color: #111; margin-bottom: 0.5rem; }
+  .success-sub { font-size: 14px; color: #888; margin-bottom: 1.5rem; }
+  .toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%); background: #111; color: #fff; padding: 10px 20px; border-radius: 99px; font-size: 14px; opacity: 0; transition: opacity 0.2s; pointer-events: none; white-space: nowrap; z-index: 999; }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">Milla Store, ficha de produto</div>
+  <div class="progress-bar"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+  <div class="produto-counter" id="counter" style="display:none;"></div>
+
+  <div class="step active" id="step-0">
+    <div class="step-label">produto</div>
+    <div class="step-question">Qual o nome do produto?</div>
+    <div class="step-hint">Ex: Vestido Floral Ágape, Conjunto Rafaela...</div>
+    <input type="text" id="nome" placeholder="Nome do produto" />
+    <button class="btn-primary" onclick="next()">Continuar</button>
+  </div>
+
+  <div class="step" id="step-1">
+    <div class="step-label">tipo</div>
+    <div class="step-question">Qual o tipo da peça?</div>
+    <div class="option-grid">
+      <button class="option-btn" onclick="sel(this,'tipo')">Vestido longo</button>
+      <button class="option-btn" onclick="sel(this,'tipo')">Vestido midi</button>
+      <button class="option-btn" onclick="sel(this,'tipo')">Vestido curto</button>
+      <button class="option-btn" onclick="sel(this,'tipo')">Conjunto</button>
+      <button class="option-btn" onclick="sel(this,'tipo')">Saia</button>
+      <button class="option-btn" onclick="sel(this,'tipo')">Outro</button>
+    </div>
+    <button class="btn-primary" onclick="next()">Continuar</button>
+    <button class="btn-back" onclick="back()">Voltar</button>
+  </div>
+
+  <div class="step" id="step-2">
+    <div class="step-label">manga</div>
+    <div class="step-question">Como é a manga?</div>
+    <div class="option-grid">
+      <button class="option-btn" onclick="sel(this,'manga')">Sem manga</button>
+      <button class="option-btn" onclick="sel(this,'manga')">Manga curta</button>
+      <button class="option-btn" onclick="sel(this,'manga')">Manga 3/4</button>
+      <button class="option-btn" onclick="sel(this,'manga')">Manga longa</button>
+      <button class="option-btn" onclick="sel(this,'manga')">Manga bufante</button>
+      <button class="option-btn" onclick="sel(this,'manga')">Manga sino</button>
+    </div>
+    <button class="btn-primary" onclick="next()">Continuar</button>
+    <button class="btn-back" onclick="back()">Voltar</button>
+  </div>
+
+  <div class="step" id="step-3">
+    <div class="step-label">tecido</div>
+    <div class="step-question">Qual o tecido?</div>
+    <div class="step-hint">Pode selecionar mais de um</div>
+    <div class="multi-hint">Toque para selecionar</div>
+    <div class="option-grid">
+      <button class="option-btn" onclick="tog(this,'tecido')">Crepe</button>
+      <button class="option-btn" onclick="tog(this,'tecido')">Viscose</button>
+      <button class="option-btn" onclick="tog(this,'tecido')">Malha</button>
+      <button class="option-btn" onclick="tog(this,'tecido')">Linho</button>
+      <button class="option-btn" onclick="tog(this,'tecido')">Poliéster</button>
+      <button class="option-btn" onclick="tog(this,'tecido')">Cetim</button>
+      <button class="option-btn" onclick="tog(this,'tecido')">Cambraia</button>
+      <button class="option-btn" onclick="tog(this,'tecido')">Outro</button>
+    </div>
+    <button class="btn-primary" onclick="next()">Continuar</button>
+    <button class="btn-back" onclick="back()">Voltar</button>
+  </div>
+
+  <div class="step" id="step-4">
+    <div class="step-label">cores</div>
+    <div class="step-question">Quais cores estão disponíveis?</div>
+    <div class="step-hint">Escreva separado por vírgula</div>
+    <input type="text" id="cores" placeholder="Ex: preto, azul marinho, vinho" />
+    <button class="btn-primary" onclick="next()">Continuar</button>
+    <button class="btn-back" onclick="back()">Voltar</button>
+  </div>
+
+  <div class="step" id="step-5">
+    <div class="step-label">acessórios</div>
+    <div class="step-question">Tem algum acessório incluso?</div>
+    <div class="multi-hint">Toque para selecionar</div>
+    <div class="option-grid">
+      <button class="option-btn" onclick="tog(this,'acess')">Cinto</button>
+      <button class="option-btn" onclick="tog(this,'acess')">Laço</button>
+      <button class="option-btn" onclick="tog(this,'acess')">Colar</button>
+      <button class="option-btn" onclick="tog(this,'acess')">Brinco</button>
+      <button class="option-btn" onclick="tog(this,'acess')">Faixa</button>
+      <button class="option-btn" onclick="tog(this,'acess')">Nenhum</button>
+    </div>
+    <button class="btn-primary" onclick="next()">Continuar</button>
+    <button class="btn-back" onclick="back()">Voltar</button>
+  </div>
+
+  <div class="step" id="step-6">
+    <div class="step-label">medidas</div>
+    <div class="step-question">Medidas da peça (tamanho único)</div>
+    <div class="step-hint">Preencha o que souber. Comprimento é o mínimo.</div>
+    <div class="row-2">
+      <div><div class="field-label">Comprimento (cm)</div><input type="number" id="compr" placeholder="Ex: 120" /></div>
+      <div><div class="field-label">Busto (cm)</div><input type="number" id="busto" placeholder="Ex: 92" /></div>
+    </div>
+    <div class="row-2">
+      <div><div class="field-label">Cintura (cm)</div><input type="number" id="cintura" placeholder="Ex: 76" /></div>
+      <div><div class="field-label">Quadril (cm)</div><input type="number" id="quadril" placeholder="Ex: 102" /></div>
+    </div>
+    <button class="btn-primary" onclick="next()" style="margin-top:12px;">Continuar</button>
+    <button class="btn-back" onclick="back()">Voltar</button>
+  </div>
+
+  <div class="step" id="step-7">
+    <div class="step-label">logística</div>
+    <div class="step-question">Peso e embalagem</div>
+    <div class="row-2">
+      <div><div class="field-label">Peso embalado (g)</div><input type="number" id="peso" placeholder="Ex: 450" /></div>
+      <div><div class="field-label">Altura embal. (cm)</div><input type="number" id="alt" placeholder="Ex: 5" /></div>
+    </div>
+    <div class="row-2">
+      <div><div class="field-label">Largura embal. (cm)</div><input type="number" id="larg" placeholder="Ex: 25" /></div>
+      <div><div class="field-label">Compr. embal. (cm)</div><input type="number" id="comp_emb" placeholder="Ex: 35" /></div>
+    </div>
+    <button class="btn-primary" onclick="next()" style="margin-top:12px;">Continuar</button>
+    <button class="btn-back" onclick="back()">Voltar</button>
+  </div>
+
+  <div class="step" id="step-8">
+    <div class="step-label">observações</div>
+    <div class="step-question">Alguma observação sobre este produto?</div>
+    <div class="step-hint">Detalhes extras, cuidados com a peça, estoque limitado, etc.</div>
+    <textarea id="obs" placeholder="Opcional..."></textarea>
+    <button class="btn-primary" id="btn-finish" onclick="finish()">Enviar ficha</button>
+    <button class="btn-back" onclick="back()">Voltar</button>
+  </div>
+
+  <div class="step" id="step-summary">
+    <div class="success-screen">
+      <div class="success-icon">✅</div>
+      <div class="success-title" id="summary-title"></div>
+      <div class="success-sub">Ficha enviada e salva na planilha.</div>
+      <div class="summary-card" id="summary-content"></div>
+    </div>
+    <button class="btn-primary" onclick="newProduct()">Cadastrar próximo produto</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbx-Da0FBYYZc1xLicJ5bb4C3r7VjXQNy8FFrpvYKISl_1abkdtxTCMOFmGvEolGsxJt/exec';
+
+  let cur = 0;
+  const total = 9;
+  let data = {};
+  let multi = {};
+  let productCount = 0;
+
+  function updateProgress() {
+    document.getElementById('prog').style.width = (cur / total * 100) + '%';
+  }
+
+  function showStep(n) {
+    document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+    const keys = ['step-0','step-1','step-2','step-3','step-4','step-5','step-6','step-7','step-8','step-summary'];
+    document.getElementById(keys[n]).classList.add('active');
+    updateProgress();
+    window.scrollTo(0, 0);
+    if (productCount > 0) {
+      const c = document.getElementById('counter');
+      c.style.display = 'block';
+      c.textContent = productCount + ' produto(s) enviado(s)';
+    }
+  }
+
+  function sel(btn, field) {
+    btn.closest('.option-grid').querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    data[field] = btn.textContent;
+  }
+
+  function tog(btn, field) {
+    if (!multi[field]) multi[field] = [];
+    if (btn.classList.contains('selected')) {
+      btn.classList.remove('selected');
+      multi[field] = multi[field].filter(v => v !== btn.textContent);
+    } else {
+      if (btn.textContent === 'Nenhum') {
+        btn.closest('.option-grid').querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        multi[field] = ['Nenhum'];
+      } else {
+        const nem = Array.from(btn.closest('.option-grid').querySelectorAll('.option-btn')).find(b => b.textContent === 'Nenhum');
+        if (nem) nem.classList.remove('selected');
+        multi[field] = multi[field].filter(v => v !== 'Nenhum');
+        multi[field].push(btn.textContent);
+      }
+      btn.classList.add('selected');
+    }
+    data[field] = multi[field].join(', ');
+  }
+
+  function next() {
+    if (cur === 0) data['nome'] = document.getElementById('nome').value || '(sem nome)';
+    if (cur === 4) data['cores'] = document.getElementById('cores').value || '';
+    if (cur === 6) {
+      data['comprimento'] = document.getElementById('compr').value;
+      data['busto'] = document.getElementById('busto').value;
+      data['cintura'] = document.getElementById('cintura').value;
+      data['quadril'] = document.getElementById('quadril').value;
+    }
+    if (cur === 7) {
+      data['peso'] = document.getElementById('peso').value;
+      const a = document.getElementById('alt').value;
+      const l = document.getElementById('larg').value;
+      const c = document.getElementById('comp_emb').value;
+      data['embalagem'] = (a && l && c) ? a+'x'+l+'x'+c+' cm' : '';
+    }
+    cur++;
+    showStep(cur);
+  }
+
+  function back() {
+    cur--;
+    showStep(cur);
+  }
+
+  function finish() {
+    data['obs'] = document.getElementById('obs').value;
+
+    const btn = document.getElementById('btn-finish');
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    const payload = Object.assign({}, data);
+
+    fetch(SCRIPT_URL, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    })
+    .then(() => {
+      productCount++;
+      renderSummary();
+      cur = 9;
+      showStep(9);
+      btn.disabled = false;
+      btn.textContent = 'Enviar ficha';
+    })
+    .catch(() => {
+      showToast('Erro ao enviar. Tente novamente.');
+      btn.disabled = false;
+      btn.textContent = 'Enviar ficha';
+    });
+  }
+
+  function renderSummary() {
+    document.getElementById('summary-title').textContent = data['nome'] || 'Produto enviado';
+    const rows = [
+      ['Tipo', data['tipo']],
+      ['Manga', data['manga']],
+      ['Tecido', data['tecido']],
+      ['Cores', data['cores']],
+      ['Acessórios', data['acess']],
+      ['Comprimento', data['comprimento'] ? data['comprimento'] + ' cm' : null],
+      ['Busto', data['busto'] ? data['busto'] + ' cm' : null],
+      ['Cintura', data['cintura'] ? data['cintura'] + ' cm' : null],
+      ['Quadril', data['quadril'] ? data['quadril'] + ' cm' : null],
+      ['Peso embalado', data['peso'] ? data['peso'] + ' g' : null],
+      ['Embalagem', data['embalagem'] || null],
+      ['Observações', data['obs'] || null],
+    ];
+    let html = '';
+    rows.forEach(([k, v]) => {
+      if (v) html += '<div class="summary-row"><span class="summary-key">'+k+'</span><span class="summary-val">'+v+'</span></div>';
+    });
+    document.getElementById('summary-content').innerHTML = html;
+  }
+
+  function newProduct() {
+    data = {};
+    multi = {};
+    cur = 0;
+    ['nome','cores','obs','compr','busto','cintura','quadril','peso','alt','larg','comp_emb'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    document.querySelectorAll('.option-btn.selected').forEach(b => b.classList.remove('selected'));
+    showStep(0);
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  updateProgress();
+</script>
+</body>
+</html>
